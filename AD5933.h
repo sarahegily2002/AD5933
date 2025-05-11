@@ -51,7 +51,8 @@
 #define Imag_high 0x96
 #define Imag_low 0x97
 
-#define scale 100000000
+// #define scale 100000000
+#define scale 1.0
 #define numofinc 60
 #define radtodeg 52.27
 #define cal_res 1000
@@ -67,6 +68,7 @@ public:
   uint8_t i = 0;
   int T = 0;
   int gluco = 5;
+  double InverseGF=1;
 
   // Initialize the AD5933
   void begin() {
@@ -170,7 +172,8 @@ public:
     b = Byte_read(Imag_low);
     I = Data_proc(a, b);
     Z = sqrt(R * R + I * I);
-    GF = 0.5 * (scale / (Z * cal_res));
+    GF = 0.5 * (1.0*scale / (Z * cal_res));
+    //  GF = (scale / (Z * cal_res));
     R = 0;
     I = 0;
     Z = 0;
@@ -236,13 +239,15 @@ public:
     b = Byte_read(Imag_low);
     I = Data_proc(a, b);
     Z = sqrt(R * R + I * I);
-    GF = GF + 0.5 * (scale / (Z * cal_res));
+    GF = GF + 0.5 * (1.0*scale / (Z * cal_res));
+    
 
     system_phase = (int)((atan(I / R)) * radtodeg);
     system_phase = system_phase - (int)((system_phase / 360)) * 360;
     R = 0;
     I = 0;
     Z = 0;
+    
   }
 
   // Measurement function
@@ -286,27 +291,27 @@ public:
     while (!(Byte_read(Status) & 0x02))
       ;
 
-    a = 0x00;
-    b = 0x00;
-    //temp data
-    a = Byte_read(Temp_high);
-    b = Byte_read(Temp_low);
-    int T = Data_proc(a, b) / 32;
+    // a = 0x00;
+    // b = 0x00;
+    // //temp data
+    // a = Byte_read(Temp_high);
+    // b = Byte_read(Temp_low);
+    // int T = Data_proc(a, b) / 32;
 
-    a = 0x00;
-    b = 0x00;
-    //real data
-    a = Byte_read(Real_high);
-    b = Byte_read(Real_low);
-    R = Data_proc(a, b);
-    a = 0x00;
-    b = 0x00;
-    //Imag data
-    a = Byte_read(Imag_high);
-    b = Byte_read(Imag_low);
-    I = Data_proc(a, b);
-    Z = sqrt(R * R + I * I);
-    Result = scale / (Z * GF);
+    // a = 0x00;
+    // b = 0x00;
+    // //real data
+    // a = Byte_read(Real_high);
+    // b = Byte_read(Real_low);
+    // R = Data_proc(a, b);
+    // a = 0x00;
+    // b = 0x00;
+    // //Imag data
+    // a = Byte_read(Imag_high);
+    // b = Byte_read(Imag_low);
+    // I = Data_proc(a, b);
+    // Z = sqrt(R * R + I * I);
+    // Result = scale / (Z * GF);
 
     while (!(Byte_read(Status) & 0x04)) {
       //sweep while loop
@@ -330,7 +335,9 @@ public:
       b = Byte_read(Imag_low);
       I = Data_proc(a, b);
       Z = sqrt(R * R + I * I);
-      Result = scale / (Z * GF);
+      
+      Result = scale/ (Z *GF);
+    
       phase = (int)((atan(I / R)) * radtodeg) - system_phase;
 
       i = i + 1;
