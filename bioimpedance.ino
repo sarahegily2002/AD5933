@@ -2,12 +2,11 @@
 
 AD5933 impedanceAnalyzer;
 
-const int relayPin = 7; // Relay control pin
+const int relayPin = PA5; // Relay control pin
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
-  pinMode(13, OUTPUT);     // Built-in LED
   pinMode(relayPin, OUTPUT); // Relay control
   digitalWrite(relayPin, LOW); // Ensure relay is OFF (using constant resistor)
 
@@ -21,10 +20,12 @@ void setup() {
 
   Serial.println("Calibration complete");
   Serial.print("Gain Factor: ");
-  Serial.println(impedanceAnalyzer.GF);
+  Serial.println(impedanceAnalyzer.GF,12);
   Serial.print("System Phase: ");
   Serial.println(impedanceAnalyzer.system_phase);
   Serial.println("\nStarting measurements...");
+
+
 
   // 🔁 Switch relay to connect variable resistor
   digitalWrite(relayPin, HIGH); // Activate relay (connect NO side = variable resistor)
@@ -32,7 +33,7 @@ void setup() {
 }
 
 void loop() {
-  delay(5000); // Time between readings
+  delay(2000); // Time between readings
 
   // Perform impedance measurement
   impedanceAnalyzer.measure();
@@ -48,6 +49,12 @@ void loop() {
   Serial.print(" degrees, Glucose: ");
   Serial.print(impedanceAnalyzer.gluco);
   Serial.println(" mg/dL");
+    Serial.println(impedanceAnalyzer.R);
+  Serial.println("real part");
+    Serial.println(impedanceAnalyzer.I);
+  Serial.println("imaginary part");
+  Serial.print("Gain Factor: ");
+    Serial.println(impedanceAnalyzer.GF,10);
 
   delay(2000); // Wait before next measurement
 }
