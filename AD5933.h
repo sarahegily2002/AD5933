@@ -1,11 +1,4 @@
-/*
- * AD5933.h
- *
- * Created: 2/11/2019 12:09:37 AM
- *  Author: MOHAMED
- * Modified for Arduino compatibility
- */
-
+//****code starts here****\\
 #ifndef AD5933_H_
 #define AD5933_H_
 
