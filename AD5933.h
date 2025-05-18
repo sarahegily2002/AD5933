@@ -1,4 +1,11 @@
-//****code starts here****\\
+/*
+ * AD5933.h
+ *
+ * Created: 2/11/2019 12:09:37 AM
+ *  Author: MOHAMED
+ * Modified for Arduino compatibility
+ */
+
 #ifndef AD5933_H_
 #define AD5933_H_
 
@@ -48,7 +55,7 @@
 #define scale 1.0
 #define numofinc 60
 #define radtodeg 52.27
-#define cal_res 1000
+#define cal_res 1500
 
 class AD5933 {
 public:
@@ -244,113 +251,65 @@ public:
   }
 
   // Measurement function
-  void measure(void) {
-    //start frequency register - 10 kHz for internal oscillator 16.776Mhz
-    Byte_write(Freq_low, 0x45);  //30k >>>0x0EA645    //70k >>>>0x222EA2    //55k>>>>>1760127>0x1adb7f
+ void measure(void) {
+    Byte_write(Freq_low, 0x45);
     Byte_write(Freq_mid, 0xA6);
     Byte_write(Freq_high, 0x0E);
-    //number of increments 100
-    Byte_write(NumInc_low, numofinc);  //notice that the number of increments is defined as numofinc in preprocessor
+    Byte_write(NumInc_low, numofinc);
     Byte_write(NumInc_high, 0x00);
-    //frequency increment register - 10 kHz 0x027D00
     Byte_write(FreqInc_low, 0x00);
     Byte_write(FreqInc_mid, 0x00);
     Byte_write(FreqInc_high, 0x00);
-
-    //settling time cycles register - 15
     Byte_write(NumSettle_low, 0x0F);
     Byte_write(NumSettle_high, 0x01);
-
-    //CONTROL register
-    //AD5933 in standby mode
-    Byte_write(Control_high, 0xB1);  //2v-p2p        PGA gain; 1 = ×1
-    Byte_write(Control_low, 0x00);   //internal clock
-
-    //initialize with start frequency
+    Byte_write(Control_high, 0xB1);
+    Byte_write(Control_low, 0x00);
     Byte_write(Control_high, 0x11);
     Byte_write(Control_low, 0x00);
-
-    //start frequency sweep
     Byte_write(Control_high, 0x21);
     Byte_write(Control_low, 0x00);
-
-    //measure temperature
     Byte_write(Control_high, 0x91);
     Byte_write(Control_low, 0x00);
 
-    while (!(Byte_read(Status) & 0x01)) {
-      digitalWrite(13, HIGH);  // Use built-in LED instead of PORTB
-    }                          //valid temp value
-    while (!(Byte_read(Status) & 0x02))
-      ;
+    while (!(Byte_read(Status) & 0x01)) digitalWrite(13, HIGH);
+    while (!(Byte_read(Status) & 0x02));
 
-    // a = 0x00;
-    // b = 0x00;
-    // //temp data
-    // a = Byte_read(Temp_high);
-    // b = Byte_read(Temp_low);
-    // int T = Data_proc(a, b) / 32;
-
-    // a = 0x00;
-    // b = 0x00;
-    // //real data
-    // a = Byte_read(Real_high);
-    // b = Byte_read(Real_low);
-    // R = Data_proc(a, b);
-    // a = 0x00;
-    // b = 0x00;
-    // //Imag data
-    // a = Byte_read(Imag_high);
-    // b = Byte_read(Imag_low);
-    // I = Data_proc(a, b);
-    // Z = sqrt(R * R + I * I);
-    // Result = scale / (Z * GF);
+    a = Byte_read(Real_high); b = Byte_read(Real_low); R = Data_proc(a, b);
+    a = Byte_read(Imag_high); b = Byte_read(Imag_low); I = Data_proc(a, b);
+    Z = sqrt(R * R + I * I);
+    Result = scale / (Z * GF);
 
     while (!(Byte_read(Status) & 0x04)) {
-      //sweep while loop
-
-      //increment frequency
       Byte_write(0x80, 0x31);
       Byte_write(0x81, 0x00);
-
-      while (!(Byte_read(Status) & 0x02))
-        ;
-      a = 0x00;
-      b = 0x00;
-      //real data
-      a = Byte_read(Real_high);
-      b = Byte_read(Real_low);
-      R = Data_proc(a, b);
-      a = 0x00;
-      b = 0x00;
-      //Imag data
-      a = Byte_read(Imag_high);
-      b = Byte_read(Imag_low);
-      I = Data_proc(a, b);
+      while (!(Byte_read(Status) & 0x02));
+      a = Byte_read(Real_high); b = Byte_read(Real_low); R = Data_proc(a, b);
+      a = Byte_read(Imag_high); b = Byte_read(Imag_low); I = Data_proc(a, b);
       Z = sqrt(R * R + I * I);
-      
-      Result = scale/ (Z *GF);
-    
+      Result = scale / (Z * GF);
       phase = (int)((atan(I / R)) * radtodeg) - system_phase;
-
-      i = i + 1;
+      i++;
       if (i <= numofinc) {
-        sumofresult = sumofresult + Result;
-        sumofphase = sumofphase + phase;
+        sumofresult += Result;
+        sumofphase += phase;
       }
     }
 
     i = 0;
     Result = sumofresult / numofinc;
+
+    // ✅ Apply correction factor if Result is below 1400 ohms
+    if (Result < 1400) {
+      Result = Result * 0.955;
+    }
+
     phase = sumofphase / numofinc;
     phase = phase - (int)((phase / 360)) * 360;
     sumofresult = 0;
     sumofphase = 0;
   }
 
-  // Glucose measurement calculation
   void glucose_measure(unsigned long int result) {
-    // 0.00015733*Z^2 - 0.32204 * Z + 257.14
     gluco = (int)(0.00015733 * pow((result - 1000), 2) - 0.32204 * (result - 1000) + 257.14);
   }
 };
